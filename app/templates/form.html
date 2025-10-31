@@ -1,0 +1,215 @@
+<!-- app/templates/form.html -->
+ 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Graves Foods - Service Request Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #222;
+            font-size: 24px;
+            margin-top: 0;
+        }
+        form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h2 {
+            margin-top: 30px;
+            font-size: 18px;
+            color: #333;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 5px;
+        }
+        .form-group {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            width: 100%;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 14px;
+            color: #333;
+        }
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        /* two-col row wrapper */
+        .two-col {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        /* each column in two-col */
+        .two-col .col {
+            flex: 1;
+            min-width: 250px;
+
+            /* NEW: make each column act like its own vertical flexbox
+               so label/input/note stack cleanly */
+            display: flex;
+            flex-direction: column;
+            align-self: flex-start;
+        }
+
+        button {
+            background-color: #fe0000;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #dd0000;
+        }
+
+        .note {
+            font-size: 12px;
+            color: #666;
+            margin-top: 6px;
+            margin-bottom: 12px;
+            font-style: italic;
+            width: 100%;
+            line-height: 1.4em;
+        }
+
+        /* NEW: placeholder note to reserve vertical space in right column
+           so phone field sits level with email field visually */
+        .note.placeholder {
+            visibility: hidden;
+        }
+    </style>
+</head>
+<body>
+    <h1>Graves Foods - Service Request Form</h1>
+
+    <form action="/submit" method="post">
+        <!-- Customer Info -->
+        <h2>Customer Information</h2>
+
+        <div class="form-group">
+            <label for="customer_name">Customer Name *</label>
+            <input type="text" id="customer_name" name="customer_name" required />
+        </div>
+
+        <div class="form-group">
+            <label for="account_number">Account Number *</label>
+            <input type="text" id="account_number" name="account_number" required />
+        </div>
+
+        <div class="form-group">
+            <label for="customer_address">Customer Address *</label>
+            <textarea id="customer_address" name="customer_address" required placeholder="Street, City, State, ZIP"></textarea>
+        </div>
+
+        <div class="two-col">
+            <div class="form-group col">
+                <label for="contact_email">Contact Email *</label>
+                <input
+                    type="email"
+                    id="contact_email"
+                    name="contact_email"
+                    required
+                    placeholder="name@example.com"
+                />
+                <div class="note">
+                    A copy of this request will be emailed to this address.
+                </div>
+            </div>
+
+            <div class="form-group col">
+                <label for="contact_phone">Contact Phone</label>
+                <input
+                    type="text"
+                    id="contact_phone"
+                    name="contact_phone"
+                    placeholder="Best phone number"
+                />
+                <!-- invisible spacer so both columns end at same vertical height -->
+                <div class="note placeholder">
+                    spacer
+                </div>
+            </div>
+        </div>
+
+        <!-- Service Details -->
+        <h2>Service Details</h2>
+
+        <div class="form-group">
+            <label for="issue_description">
+                Description of Issue / Equipment *
+            </label>
+            <textarea
+                id="issue_description"
+                name="issue_description"
+                required
+                placeholder="Describe the issue and the equipment involved"
+            ></textarea>
+        </div>
+
+        <!-- Request Details -->
+        <h2>Request Details</h2>
+
+        <div class="two-col">
+            <div class="form-group col">
+                <label for="date">Date *</label>
+                <input type="date" id="date" name="date" required />
+            </div>
+
+            <div class="form-group col">
+                <label for="salesperson_name">Salesperson's Name</label>
+                <input
+                    type="text"
+                    id="salesperson_name"
+                    name="salesperson_name"
+                    placeholder="Salesperson responsible"
+                />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="requester_name">Name of Person Submitting This Request *</label>
+            <input
+                type="text"
+                id="requester_name"
+                name="requester_name"
+                required
+                placeholder="Your name"
+            />
+        </div>
+
+        <button type="submit">Submit Service Request</button>
+    </form>
+</body>
+</html>

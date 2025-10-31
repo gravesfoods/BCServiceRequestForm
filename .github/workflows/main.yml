@@ -1,0 +1,64 @@
+name: Deploy to Linode
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Copy application files to Linode
+      run: |
+        rsync -avz --delete --exclude 'venv' --exclude '.git' ./app/ root@172.232.20.177:/root/ServiceRequestForm/app/
+      env:
+        RSYNC_RSH: 'sshpass -p "jS21goUi0267" ssh -o StrictHostKeyChecking=no'
+
+    - name: Copy uvicorn service file to Linode
+      run: |
+        sshpass -p "jS21goUi0267" scp -o StrictHostKeyChecking=no ./uvicorn_servicerequestform.service root@172.232.20.177:/root/ServiceRequestForm/uvicorn_servicerequestform.service
+
+    - name: Install dependencies and configure Uvicorn service on Linode
+      uses: appleboy/ssh-action@master
+      with:
+        host: "172.232.20.177"
+        username: "root"
+        password: "jS21goUi0267"
+        script: |
+          export DEBIAN_FRONTEND=noninteractive
+          sudo apt update -qq
+          sudo apt install -qq -y python3-venv
+          
+          # Navigate to the application directory and set up the virtual environment if not existing
+          cd /root/ServiceRequestForm/app
+          if [ ! -d "venv" ]; then
+            python3 -m venv venv
+          fi
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          
+          # Remove conflicting uvicorn_servicerequestform.service directory if it exists
+          if [ -d "/etc/systemd/system/uvicorn_servicerequestform.service" ]; then
+            sudo rm -rf /etc/systemd/system/uvicorn_servicerequestform.service
+          fi
+          
+          # Remove any existing uvicorn_servicerequestform.service file
+          sudo rm -f /etc/systemd/system/uvicorn_servicerequestform.service
+          
+          # Move the service file to the systemd folder and set appropriate permissions
+          sudo mv /root/ServiceRequestForm/uvicorn_servicerequestform.service /etc/systemd/system/uvicorn_equipmentform.service
+          sudo chmod 644 /etc/systemd/system/uvicorn_servicerequestform.service
+          
+          # Reload systemd to recognize the new service and restart it
+          sudo systemctl daemon-reload
+          sudo systemctl enable uvicorn_servicerequestform.service
+          sudo systemctl restart uvicorn_servicerequestform.service
+
+          # Optional: Check service status
+          sudo systemctl status uvicorn_servicerequestform.service -l

@@ -1,0 +1,45 @@
+body {
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    margin: 36pt; /* 0.5 inch margin */
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    max-height: 100px; /* Ensures the header doesn't grow beyond 75px in height */
+    overflow: hidden; /* If needed to prevent content overflow */
+}
+
+.logo {
+    max-height: 75px; /* Prevents the image from exceeding 75px in height */
+    width: auto;      /* Maintain aspect ratio automatically */
+    margin-right: 20px;
+}
+
+.company-info h1 {
+    margin: 0;
+    font-size: 18px;
+}
+
+hr {
+    margin: 20px 0;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+table td {
+    padding: 5px;
+    border: 1px solid #ccc;
+    vertical-align: top;
+}
+
+h2 {
+    margin-top: 30px;
+    margin-bottom: 10px;
+}

@@ -1,0 +1,9 @@
+fastapi 
+uvicorn 
+jinja2
+python-dotenv
+python-multipart
+reportlab
+asyncpg
+databases[postgresql]
+WeasyPrint

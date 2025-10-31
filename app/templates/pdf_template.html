@@ -1,0 +1,152 @@
+<!-- app/templates/pdf_template.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Service Request Form</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      margin: 20px;
+      color: #000;
+    }
+    .header {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .logo {
+      width: 120px;
+    }
+    .company-info h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+    .company-info p {
+      margin: 2px 0;
+      font-size: 11px;
+      line-height: 1.4em;
+    }
+    hr {
+      margin: 20px 0;
+    }
+    h2 {
+      color: #333;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 4px;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 16px;
+      font-size: 12px;
+    }
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+    th, td {
+      padding: 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .block {
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin-bottom: 20px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-size: 12px;
+      line-height: 1.4em;
+    }
+    footer {
+      font-size: 10px;
+      border-top: 1px solid #ddd;
+      padding-top: 10px;
+      text-align: center;
+      margin-top: 30px;
+      color: #555;
+      line-height: 1.4em;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <!-- logo as base64 string -->
+    <img src="data:image/png;base64,{{ logo_data }}" alt="Graves Foods Logo" class="logo">
+
+    <div class="company-info">
+      <h1>Graves Foods</h1>
+      <p>
+        913 Big Horn Drive<br>
+        Jefferson City, MO 65109<br>
+        Phone: (573) 893-3000<br>
+        gravesfoods.com<br>
+        Excellence Since 1947
+      </p>
+    </div>
+  </div>
+
+  <hr>
+
+  <h2>Customer Information</h2>
+  <table>
+    <tr>
+      <td><strong>Customer Name:</strong></td>
+      <td>{{ customer_name }}</td>
+    </tr>
+    <tr>
+      <td><strong>Account Number:</strong></td>
+      <td>{{ account_number }}</td>
+    </tr>
+    <tr>
+      <td><strong>Customer Address:</strong></td>
+      <td>{{ customer_address }}</td>
+    </tr>
+    <tr>
+      <td><strong>Contact Email:</strong></td>
+      <td>{{ contact_email }}</td>
+    </tr>
+    <tr>
+      <td><strong>Contact Phone:</strong></td>
+      <td>{{ contact_phone }}</td>
+    </tr>
+  </table>
+
+  <h2>Request Details</h2>
+  <table>
+    <tr>
+      <td><strong>Date:</strong></td>
+      <td>{{ date }}</td>
+    </tr>
+    <tr>
+      <td><strong>Salesperson's Name:</strong></td>
+      <td>{{ salesperson_name }}</td>
+    </tr>
+    <tr>
+      <td><strong>Request Submitted By:</strong></td>
+      <td>{{ requester_name }}</td>
+    </tr>
+    <tr>
+      <td><strong>Submitted From IP:</strong></td>
+      <td>{{ ip_address }}</td>
+    </tr>
+  </table>
+
+  <h2>Issue / Equipment Description</h2>
+  <div class="block">
+    {{ issue_description }}
+  </div>
+
+  <footer>
+    <div><strong>Form ID:</strong> {{ form_id }}</div>
+    <div><strong>Submission Timestamp:</strong> {{ current_datetime }}</div>
+    <div><strong>IP Address:</strong> {{ ip_address }}</div>
+  </footer>
+
+</body>
+</html>
