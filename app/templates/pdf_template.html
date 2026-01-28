@@ -76,7 +76,6 @@
 <body>
 
   <div class="header">
-    <!-- logo as base64 string -->
     <img src="data:image/png;base64,{{ logo_data }}" alt="Graves Foods Logo" class="logo">
 
     <div class="company-info">
@@ -117,6 +116,18 @@
     </tr>
   </table>
 
+  <h2>Service Details</h2>
+  <table>
+    <tr>
+      <td><strong>Equipment Model:</strong></td>
+      <td>{{ equipment_model }}</td>
+    </tr>
+    <tr>
+      <td><strong>Serial Number:</strong></td>
+      <td>{{ equipment_serial_number }}</td>
+    </tr>
+  </table>
+
   <h2>Request Details</h2>
   <table>
     <tr>
@@ -130,6 +141,14 @@
     <tr>
       <td><strong>Request Submitted By:</strong></td>
       <td>{{ requester_name }}</td>
+    </tr>
+    <tr>
+      <td><strong>On-site Customer Contact:</strong></td>
+      <td>{{ on_site_customer_contact }}</td>
+    </tr>
+    <tr>
+      <td><strong>Available Service Hours:</strong></td>
+      <td>{{ available_service_start_time }} - {{ available_service_end_time }}</td>
     </tr>
     <tr>
       <td><strong>Submitted From IP:</strong></td>
