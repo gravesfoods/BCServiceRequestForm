@@ -1,5 +1,5 @@
 <!-- app/templates/form.html -->
- 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -71,9 +71,6 @@
         .two-col .col {
             flex: 1;
             min-width: 250px;
-
-            /* NEW: make each column act like its own vertical flexbox
-               so label/input/note stack cleanly */
             display: flex;
             flex-direction: column;
             align-self: flex-start;
@@ -104,8 +101,6 @@
             line-height: 1.4em;
         }
 
-        /* NEW: placeholder note to reserve vertical space in right column
-           so phone field sits level with email field visually */
         .note.placeholder {
             visibility: hidden;
         }
@@ -156,15 +151,37 @@
                     name="contact_phone"
                     placeholder="Best phone number"
                 />
-                <!-- invisible spacer so both columns end at same vertical height -->
-                <div class="note placeholder">
-                    spacer
-                </div>
+                <div class="note placeholder">spacer</div>
             </div>
         </div>
 
         <!-- Service Details -->
         <h2>Service Details</h2>
+
+        <!-- NEW: Equipment Model + Serial Number -->
+        <div class="two-col">
+            <div class="form-group col">
+                <label for="equipment_model">Equipment Model *</label>
+                <input
+                    type="text"
+                    id="equipment_model"
+                    name="equipment_model"
+                    required
+                    placeholder="Model number / model name"
+                />
+            </div>
+
+            <div class="form-group col">
+                <label for="equipment_serial_number">Serial Number *</label>
+                <input
+                    type="text"
+                    id="equipment_serial_number"
+                    name="equipment_serial_number"
+                    required
+                    placeholder="Serial number"
+                />
+            </div>
+        </div>
 
         <div class="form-group">
             <label for="issue_description">
@@ -207,6 +224,44 @@
                 required
                 placeholder="Your name"
             />
+        </div>
+
+        <!-- NEW: On-site customer contact -->
+        <div class="form-group">
+            <label for="on_site_customer_contact">On-site Customer Contact (if different from submitter) *</label>
+            <input
+                type="text"
+                id="on_site_customer_contact"
+                name="on_site_customer_contact"
+                required
+                placeholder="Name (and best phone/email if applicable)"
+            />
+            <div class="note">
+                If the on-site contact is the same person submitting this request, enter the same name here.
+            </div>
+        </div>
+
+        <!-- NEW: Available service hours (time selector start/end) -->
+        <div class="two-col">
+            <div class="form-group col">
+                <label for="available_service_start_time">Available Service Hours - Start Time *</label>
+                <input
+                    type="time"
+                    id="available_service_start_time"
+                    name="available_service_start_time"
+                    required
+                />
+            </div>
+
+            <div class="form-group col">
+                <label for="available_service_end_time">Available Service Hours - End Time *</label>
+                <input
+                    type="time"
+                    id="available_service_end_time"
+                    name="available_service_end_time"
+                    required
+                />
+            </div>
         </div>
 
         <button type="submit">Submit Service Request</button>

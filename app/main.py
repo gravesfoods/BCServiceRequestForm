@@ -1,6 +1,6 @@
 # app/main.py
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 import smtplib
@@ -50,6 +50,14 @@ service_request_forms = Table(
     Column("customer_address", Text),
     Column("contact_phone", Text),
     Column("contact_email", Text),
+
+    # NEW (required fields requested)
+    Column("equipment_model", Text),
+    Column("equipment_serial_number", Text),
+    Column("on_site_customer_contact", Text),
+    Column("available_service_start_time", Text),
+    Column("available_service_end_time", Text),
+
     Column("issue_description", Text),
     Column("date", Date),
     Column("salesperson_name", Text),
@@ -90,10 +98,43 @@ async def submit_form(request: Request):
     customer_address = form_data.get("customer_address")
     contact_phone = form_data.get("contact_phone")
     contact_email = form_data.get("contact_email")
+
+    # NEW (required)
+    equipment_model = form_data.get("equipment_model")
+    equipment_serial_number = form_data.get("equipment_serial_number")
+    on_site_customer_contact = form_data.get("on_site_customer_contact")
+    available_service_start_time = form_data.get("available_service_start_time")
+    available_service_end_time = form_data.get("available_service_end_time")
+
     issue_description = form_data.get("issue_description")
     date_str = form_data.get("date")
     salesperson_name = form_data.get("salesperson_name")
     requester_name = form_data.get("requester_name")
+
+    # Server-side required validation (in addition to HTML required)
+    required_fields = {
+        "customer_name": customer_name,
+        "account_number": account_number,
+        "customer_address": customer_address,
+        "contact_email": contact_email,
+        "issue_description": issue_description,
+        "date": date_str,
+        "requester_name": requester_name,
+
+        # NEW required fields
+        "equipment_model": equipment_model,
+        "equipment_serial_number": equipment_serial_number,
+        "on_site_customer_contact": on_site_customer_contact,
+        "available_service_start_time": available_service_start_time,
+        "available_service_end_time": available_service_end_time,
+    }
+
+    missing = [k for k, v in required_fields.items() if not (v and str(v).strip())]
+    if missing:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Missing required field(s): {', '.join(missing)}"
+        )
 
     # Convert date (YYYY-MM-DD) -> date object
     try:
@@ -114,6 +155,14 @@ async def submit_form(request: Request):
         "customer_address": customer_address,
         "contact_phone": contact_phone,
         "contact_email": contact_email,
+
+        # NEW
+        "equipment_model": equipment_model,
+        "equipment_serial_number": equipment_serial_number,
+        "on_site_customer_contact": on_site_customer_contact,
+        "available_service_start_time": available_service_start_time,
+        "available_service_end_time": available_service_end_time,
+
         "issue_description": issue_description,
         "date": date_value,
         "salesperson_name": salesperson_name,
@@ -130,6 +179,14 @@ async def submit_form(request: Request):
         "customer_address": customer_address,
         "contact_phone": contact_phone,
         "contact_email": contact_email,
+
+        # NEW
+        "equipment_model": equipment_model,
+        "equipment_serial_number": equipment_serial_number,
+        "on_site_customer_contact": on_site_customer_contact,
+        "available_service_start_time": available_service_start_time,
+        "available_service_end_time": available_service_end_time,
+
         "issue_description": issue_description,
         "date": date_value,
         "salesperson_name": salesperson_name,
@@ -207,6 +264,13 @@ def generate_pdf(data: dict) -> bytes:
         form_id=data["form_id"],
         current_datetime=data["current_datetime"],
         logo_data=logo_data,
+
+        # NEW
+        equipment_model=data["equipment_model"],
+        equipment_serial_number=data["equipment_serial_number"],
+        on_site_customer_contact=data["on_site_customer_contact"],
+        available_service_start_time=data["available_service_start_time"],
+        available_service_end_time=data["available_service_end_time"],
     )
 
     pdf_data = HTML(string=html_content).write_pdf()
