@@ -8,9 +8,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 from databases import Database
-from sqlalchemy import (
-    Date, Text, MetaData, Table, Column, Integer, DateTime, func
-)
+from sqlalchemy import Date, Text, MetaData, Table, Column, Integer, DateTime, func
 import os
 from dotenv import load_dotenv
 from weasyprint import HTML
@@ -18,9 +16,15 @@ from jinja2 import Environment, FileSystemLoader
 from datetime import datetime
 import uuid
 import base64
+from pathlib import Path
+
+# --- Path-safe base dirs (fixes template/asset mismatches) ---
+BASE_DIR = Path(__file__).resolve().parent               # .../app
+TEMPLATES_DIR = BASE_DIR / "templates"                  # .../app/templates
+ASSETS_DIR = BASE_DIR / "assets"                        # .../app/assets
 
 app = FastAPI()
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 load_dotenv()
 
 COMPANY_EMAIL = os.getenv("COMPANY_EMAIL")
@@ -133,14 +137,12 @@ async def submit_form(request: Request):
     if missing:
         raise HTTPException(
             status_code=400,
-            detail=f"Missing required field(s): {', '.join(missing)}"
+            detail=f"Missing required field(s): {', '.join(missing)}",
         )
 
     # Convert date (YYYY-MM-DD) -> date object
     try:
-        date_value = (
-            datetime.strptime(date_str, "%Y-%m-%d").date() if date_str else None
-        )
+        date_value = datetime.strptime(date_str, "%Y-%m-%d").date() if date_str else None
     except ValueError:
         date_value = None
 
@@ -238,42 +240,27 @@ async def submit_form(request: Request):
 def generate_pdf(data: dict) -> bytes:
     """
     Generate a PDF from template using the data dictionary.
-    This version is for the Service Request Form.
+    Path-safe + passes all fields to template to prevent blanks.
     """
-    env = Environment(loader=FileSystemLoader("templates"))
+    env = Environment(loader=FileSystemLoader(str(TEMPLATES_DIR)))
     template = env.get_template("pdf_template.html")
 
     # Convert date to string for display
-    date_str = data["date"].strftime("%Y-%m-%d") if data["date"] else ""
+    date_str = data["date"].strftime("%Y-%m-%d") if data.get("date") else ""
 
     # Embed logo as base64 for PDF
-    with open("assets/logo_sm.png", "rb") as image_file:
+    with open(ASSETS_DIR / "logo_sm.png", "rb") as image_file:
         logo_data = base64.b64encode(image_file.read()).decode("utf-8")
 
-    html_content = template.render(
-        customer_name=data["customer_name"],
-        account_number=data["account_number"],
-        customer_address=data["customer_address"],
-        contact_phone=data["contact_phone"],
-        contact_email=data["contact_email"],
-        date=date_str,
-        salesperson_name=data["salesperson_name"],
-        requester_name=data["requester_name"],
-        issue_description=data["issue_description"],
-        ip_address=data["ip_address"],
-        form_id=data["form_id"],
-        current_datetime=data["current_datetime"],
-        logo_data=logo_data,
+    # Pass EVERYTHING (prevents missing new fields in PDF)
+    render_data = dict(data)
+    render_data["date"] = date_str
+    render_data["logo_data"] = logo_data
 
-        # NEW
-        equipment_model=data["equipment_model"],
-        equipment_serial_number=data["equipment_serial_number"],
-        on_site_customer_contact=data["on_site_customer_contact"],
-        available_service_start_time=data["available_service_start_time"],
-        available_service_end_time=data["available_service_end_time"],
-    )
+    html_content = template.render(**render_data)
 
-    pdf_data = HTML(string=html_content).write_pdf()
+    # base_url helps weasyprint resolve any relative refs if you add them later
+    pdf_data = HTML(string=html_content, base_url=str(BASE_DIR)).write_pdf()
     return pdf_data
 
 
