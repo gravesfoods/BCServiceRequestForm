@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Service Request Form Access</title>
+    <style>
+        body {
+            align-items: center;
+            background: #f4f4f4;
+            display: flex;
+            font-family: Arial, sans-serif;
+            justify-content: center;
+            margin: 0;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .access-card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
+            max-width: 400px;
+            padding: 28px;
+            text-align: center;
+            width: 100%;
+        }
+        h1 { color: #222; font-size: 24px; margin: 0 0 12px; }
+        p { color: #555; line-height: 1.4; }
+        label { display: block; font-weight: bold; margin: 22px 0 7px; }
+        input {
+            border: 1px solid #bbb;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 24px;
+            letter-spacing: 0.35em;
+            padding: 10px;
+            text-align: center;
+            width: 100%;
+        }
+        button {
+            background: #fe0000;
+            border: 0;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 18px;
+            padding: 12px 20px;
+            width: 100%;
+        }
+        button:hover { background: #dd0000; }
+        .error { color: #b00020; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <main class="access-card">
+        <h1>Service Request Form</h1>
+        <p>Enter the 4-digit PIN to continue.</p>
+        {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+        <form action="/unlock" method="post">
+            <label for="pin">Access PIN</label>
+            <input
+                id="pin"
+                name="pin"
+                type="password"
+                inputmode="numeric"
+                pattern="[0-9]{4}"
+                maxlength="4"
+                autocomplete="one-time-code"
+                autofocus
+                required
+            />
+            <button type="submit">Continue</button>
+        </form>
+    </main>
+</body>
+</html>
