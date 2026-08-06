@@ -1,7 +1,7 @@
 # app/main.py
 
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -16,6 +16,10 @@ from jinja2 import Environment, FileSystemLoader
 from datetime import datetime
 import uuid
 import base64
+import hashlib
+import hmac
+import secrets
+import time
 from pathlib import Path
 
 # --- Path-safe base dirs (fixes template/asset mismatches) ---
@@ -33,6 +37,16 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USERNAME = os.getenv("EMAIL_USERNAME")
 SMTP_PASSWORD = os.getenv("EMAIL_PASSWORD")
 FROM_EMAIL = os.getenv("FROM_EMAIL")
+
+# Access gate configuration. Set these in the deployment environment to override
+# the requested PIN and to keep sessions valid across application restarts.
+ACCESS_PIN = os.getenv("FORM_ACCESS_PIN", "9130")
+ACCESS_SECRET = os.getenv("FORM_ACCESS_SECRET") or secrets.token_hex(32)
+ACCESS_COOKIE = "service_form_access"
+ACCESS_COOKIE_MAX_AGE = 8 * 60 * 60
+MAX_PIN_ATTEMPTS = 5
+PIN_LOCKOUT_SECONDS = 15 * 60
+pin_attempts = {}
 
 load_dotenv(override=True)
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -80,9 +94,73 @@ async def shutdown():
     if database.is_connected:
         await database.disconnect()
 
+def has_form_access(request: Request) -> bool:
+    supplied_token = request.cookies.get(ACCESS_COOKIE, "")
+    expected_token = hmac.new(
+        ACCESS_SECRET.encode("utf-8"), b"service-form-access", hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(supplied_token, expected_token)
+
+
+def client_identifier(request: Request) -> str:
+    return request.client.host if request.client else "unknown"
+
+
 @app.get("/", response_class=HTMLResponse)
 async def get_form(request: Request):
+    if not has_form_access(request):
+        return templates.TemplateResponse(
+            "pin.html", {"request": request, "error": None}, status_code=401
+        )
     return templates.TemplateResponse("form.html", {"request": request})
+
+
+@app.post("/unlock", response_class=HTMLResponse)
+async def unlock_form(request: Request):
+    form_data = await request.form()
+    submitted_pin = str(form_data.get("pin", ""))
+    client_id = client_identifier(request)
+    now = time.monotonic()
+    attempts = [
+        attempt
+        for attempt in pin_attempts.get(client_id, [])
+        if now - attempt < PIN_LOCKOUT_SECONDS
+    ]
+
+    if len(attempts) >= MAX_PIN_ATTEMPTS:
+        pin_attempts[client_id] = attempts
+        return templates.TemplateResponse(
+            "pin.html",
+            {
+                "request": request,
+                "error": "Too many incorrect attempts. Please try again in 15 minutes.",
+            },
+            status_code=429,
+        )
+
+    if not hmac.compare_digest(submitted_pin, ACCESS_PIN):
+        attempts.append(now)
+        pin_attempts[client_id] = attempts
+        return templates.TemplateResponse(
+            "pin.html",
+            {"request": request, "error": "Incorrect PIN."},
+            status_code=401,
+        )
+
+    pin_attempts.pop(client_id, None)
+    access_token = hmac.new(
+        ACCESS_SECRET.encode("utf-8"), b"service-form-access", hashlib.sha256
+    ).hexdigest()
+    response = RedirectResponse(url="/", status_code=303)
+    response.set_cookie(
+        ACCESS_COOKIE,
+        access_token,
+        max_age=ACCESS_COOKIE_MAX_AGE,
+        httponly=True,
+        secure=request.url.scheme == "https",
+        samesite="strict",
+    )
+    return response
 
 @app.get("/confirmation", response_class=HTMLResponse)
 async def confirmation_page(request: Request, customer_name: str = None):
@@ -93,6 +171,9 @@ async def confirmation_page(request: Request, customer_name: str = None):
 
 @app.post("/submit", response_class=HTMLResponse)
 async def submit_form(request: Request):
+    if not has_form_access(request):
+        raise HTTPException(status_code=403, detail="PIN access is required.")
+
     # Grab all form fields
     form_data = await request.form()
     ip_address = request.client.host
