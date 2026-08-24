@@ -9,6 +9,7 @@ from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 from databases import Database
 from sqlalchemy import Date, Text, MetaData, Table, Column, Integer, DateTime, func
+from sqlalchemy.dialects.postgresql import insert as postgresql_insert
 import os
 from dotenv import load_dotenv
 from weasyprint import HTML
@@ -63,6 +64,7 @@ service_request_forms = Table(
     "service_request_forms",
     metadata,
     Column("id", Integer, primary_key=True),
+    Column("submission_token", Text),
     Column("customer_name", Text),
     Column("account_number", Text),
     Column("customer_address", Text),
@@ -88,6 +90,15 @@ service_request_forms = Table(
 async def startup():
     if not database.is_connected:
         await database.connect()
+    await database.execute(
+        "ALTER TABLE service_request_forms "
+        "ADD COLUMN IF NOT EXISTS submission_token TEXT"
+    )
+    await database.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS "
+        "ux_service_request_forms_submission_token "
+        "ON service_request_forms (submission_token)"
+    )
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -112,7 +123,10 @@ async def get_form(request: Request):
         return templates.TemplateResponse(
             "pin.html", {"request": request, "error": None}, status_code=401
         )
-    return templates.TemplateResponse("form.html", {"request": request})
+    return templates.TemplateResponse(
+        "form.html",
+        {"request": request, "submission_token": str(uuid.uuid4())},
+    )
 
 
 @app.post("/unlock", response_class=HTMLResponse)
@@ -177,6 +191,12 @@ async def submit_form(request: Request):
     # Grab all form fields
     form_data = await request.form()
     ip_address = request.client.host
+
+    submitted_token = str(form_data.get("submission_token", "")).strip()
+    try:
+        submission_token = str(uuid.UUID(submitted_token))
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid submission token.")
 
     customer_name = form_data.get("customer_name")
     account_number = form_data.get("account_number")
@@ -257,6 +277,7 @@ async def submit_form(request: Request):
 
     # Prepare DB insert
     query_data = {
+        "submission_token": submission_token,
         "customer_name": customer_name,
         "account_number": account_number,
         "customer_address": customer_address,
@@ -277,8 +298,22 @@ async def submit_form(request: Request):
         "ip_address": ip_address,
     }
 
-    insert_query = service_request_forms.insert().values(**query_data)
-    await database.execute(insert_query)
+    insert_query = (
+        postgresql_insert(service_request_forms)
+        .values(**query_data)
+        .on_conflict_do_nothing(index_elements=["submission_token"])
+        .returning(service_request_forms.c.id)
+    )
+    inserted_id = await database.execute(insert_query)
+
+    # A repeated browser POST carries the same one-time token. The original
+    # request owns the database row and email delivery; repeated requests stop
+    # here so they cannot generate additional messages.
+    if inserted_id is None:
+        confirmation_url = request.url_for("confirmation_page").include_query_params(
+            customer_name=customer_name
+        )
+        return RedirectResponse(url=str(confirmation_url), status_code=303)
 
     # Generate PDF from template
     pdf_data = generate_pdf(full_form_data)
@@ -311,11 +346,12 @@ async def submit_form(request: Request):
             pdf_data,
         )
 
-    # Return confirmation page
-    return templates.TemplateResponse(
-        "confirmation.html",
-        {"request": request, "customer_name": customer_name},
+    # Redirect after POST so refreshing the confirmation page cannot resubmit
+    # the original request.
+    confirmation_url = request.url_for("confirmation_page").include_query_params(
+        customer_name=customer_name
     )
+    return RedirectResponse(url=str(confirmation_url), status_code=303)
 
 
 def generate_pdf(data: dict) -> bytes:

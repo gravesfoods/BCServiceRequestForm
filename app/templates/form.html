@@ -91,6 +91,11 @@
             background-color: #dd0000;
         }
 
+        button:disabled {
+            background-color: #999;
+            cursor: wait;
+        }
+
         .note {
             font-size: 12px;
             color: #666;
@@ -109,7 +114,8 @@
 <body>
     <h1>Graves Foods - Service Request Form</h1>
 
-    <form action="/submit" method="post">
+    <form id="service-request-form" action="/submit" method="post">
+        <input type="hidden" name="submission_token" value="{{ submission_token }}" />
         <!-- Customer Info -->
         <h2>Customer Information</h2>
 
@@ -264,7 +270,22 @@
             </div>
         </div>
 
-        <button type="submit">Submit Service Request</button>
+        <button id="submit-button" type="submit">Submit Service Request</button>
     </form>
+    <script>
+        const form = document.getElementById("service-request-form");
+        const submitButton = document.getElementById("submit-button");
+
+        form.addEventListener("submit", (event) => {
+            if (form.dataset.submitting === "true") {
+                event.preventDefault();
+                return;
+            }
+
+            form.dataset.submitting = "true";
+            submitButton.disabled = true;
+            submitButton.textContent = "Submitting…";
+        });
+    </script>
 </body>
 </html>
